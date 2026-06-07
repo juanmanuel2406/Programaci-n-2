@@ -1,11 +1,11 @@
-def checkout(factory, amout):
+def checkout(factory, amount):
     validator = factory.create_fraud_validator()
 
-    if not validator.validator(amout): 
+    if not validator.validator(amount):
         raise Exception("Pago Rechazado")
-    
+
     procesador = factory.create_payment_processor()
-    procesador.pay(amout)
+    procesador.pay(amount)
 
     recipt = factory.create_receipt_generator()
-    recipt.generate(amout)
+    recipt.generate(amount)

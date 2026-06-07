@@ -1,4 +1,4 @@
-from product import FraudValidator, ReceiptGenerator, PaymentProcessor
+from Business.product import FraudValidator, ReceiptGenerator, PaymentProcessor
 
 class PaypalPaymentProcessor(PaymentProcessor):
     def pay(self, amount):

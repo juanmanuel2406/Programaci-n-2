@@ -1,4 +1,4 @@
-from product import FraudValidator, PaymentProcessor, ReceiptGenerator
+from Business.product import FraudValidator, PaymentProcessor, ReceiptGenerator
 
 class MpPaymentProcessor(PaymentProcessor):
 
@@ -8,9 +8,9 @@ class MpPaymentProcessor(PaymentProcessor):
 class MpFraudValidator(FraudValidator):
 
     def validator(self, amount):
-        print("validando el pago de Mercado Pago")
+        print("Validando el pago de Mercado Pago")
         return True
-    
+
 class MpReciptGenerator(ReceiptGenerator):
 
     def generate(self, amount):

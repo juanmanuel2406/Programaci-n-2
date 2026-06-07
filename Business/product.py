@@ -10,10 +10,10 @@ class FraudValidator(ABC):
 
     @abstractmethod
     def validator(self, amount):
-        pass    
+        pass
 
 class ReceiptGenerator(ABC):
 
     @abstractmethod
     def generate(self, amount):
-        pass    
+        pass
