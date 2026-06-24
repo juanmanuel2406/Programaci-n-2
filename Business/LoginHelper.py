@@ -1,70 +1,63 @@
 import bcrypt
 from decimal import Decimal
 from tabulate import tabulate
-from Data.dataHelper import DataHelper
+from Data.data_interface import IDataHelper
+from Business.fixer_service import FixerService
 from Business.Logger import Loger
 from Business.factorys import Cardfactory, Mpfactory, Paypalfactory
 from Business.payhelper import checkout
+from Business.exceptions import AccountNotFoundError, InsufficientBalanceError, CurrencyNotSupportedError, UserNotFoundError
 
 class LoginHelper:
 
-    def __init__(self):
-        self.dataHelper = DataHelper()
+    def __init__(self, data_helper: IDataHelper, fixer_service: FixerService = None):
+        self.dataHelper = data_helper
+        self.fixer_service = fixer_service or FixerService()
         self.loger = Loger()
 
     def sanitize(self, text):
         return text.strip()
-    
+
     def CheckEqPwd(self, pwd1, pwd2):
         if pwd1 == pwd2:
             return
-        else: 
-            raise ValueError("Los passwords No son iguales, no coiciden")
-        
+        else:
+            raise ValueError("Los passwords no son iguales, no coinciden")
+
     def prepareAndStorePwd(self, username, pwd):
         codePwd = pwd.encode('utf-8')
-        hashedPwd = bcrypt.hashpw(codePwd,bcrypt.gensalt())
+        hashedPwd = bcrypt.hashpw(codePwd, bcrypt.gensalt())
         self.dataHelper.addUsuario(username, hashedPwd.decode('utf-8'))
         self.loger.log("Usuario {} registrado correctamente".format(username))
 
     def checkUserAndPwd(self, username, pwd):
         hashedpwd = self.dataHelper.GetUsers(username)
         if hashedpwd is None:
-            raise ValueError("Usuario/Contraseña inexistente")
-        if bcrypt.checkpw(pwd.encode('utf-8'), hashedpwd.encode('utf-8')) == False:
+            raise UserNotFoundError(username)
+        if not bcrypt.checkpw(pwd.encode('utf-8'), hashedpwd.encode('utf-8')):
             raise ValueError("Password Incorrecto")
-        self.loger.log("Usuario {} inició sesión".format(username))
+        self.loger.log("Usuario {} inici\u00f3 sesi\u00f3n".format(username))
 
     def abrir_cuenta(self, username, moneda):
-        
-        #Esto verifica que este el usuario ingresado
         if self.dataHelper.GetUsers(username) is None:
-            raise ValueError("El usuario no existe")
+            raise UserNotFoundError(username)
 
-        #Esto valida que la moneda tenga las 3 letras
         moneda = moneda.strip().upper()
         if len(moneda) != 3 or not moneda.isalpha():
             raise ValueError("La moneda debe tener exactamente 3 letras (Ej: USD, ARS, EUR)")
 
-        #Acá cargamo o creamos el archivo del usuario
         cuentas = self.dataHelper.getCuentas(username)
-
-        #Esto verifica que ya haya una cuenta abierta con esa moneda
         if moneda in cuentas:
             raise ValueError("Ya existe una cuenta en {}".format(moneda))
 
-        #Esto crea la cuenta en 0 con Decimal
         cuentas[moneda] = str(Decimal(0))
-
-        #Esto ultimo guarda la cuenta y el registro qeu hicimos
         self.dataHelper.saveCuentas(username, cuentas)
-        self.loger.log("Usuario {} abrió cuenta en {}".format(username, moneda))
+        self.loger.log("Usuario {} abri\u00f3 cuenta en {}".format(username, moneda))
 
     def listar_cuentas(self, username):
         cuentas = self.dataHelper.getCuentas(username)
-
         if not cuentas:
-            print("No tenés cuentas abiertas todavía.")
+            print("No ten\u00e9s cuentas abiertas todav\u00eda.")
             return
 
         tabla = [
@@ -72,42 +65,34 @@ class LoginHelper:
             for moneda, saldo in cuentas.items()
         ]
         print(tabulate(tabla, headers=["Moneda", "Saldo"], tablefmt="grid"))
-            
+
     def depositar(self, username, moneda, monto):
         moneda = moneda.strip().upper()
-    
-        #Valiidamos que el monto que quiera ingresar esa positivo
         monto = Decimal(monto)
         if monto <= 0:
             raise ValueError("El monto debe ser mayor a 0")
-    
-        #Cargamos las cuentas
+
         cuentas = self.dataHelper.getCuentas(username)
-    
-        #Si no existe la cuenta, la crea automáticamente
         if moneda not in cuentas:
-            print("No tenías cuenta en {}, se creó automáticamente.".format(moneda))
-    
-        #Sumamos el monto a lo que ya tiene o si no tiene nada usamos a 0
-        cuentas[moneda] = str(Decimal(cuentas[moneda]) + monto)
-    
-        #Guardamos
+            print("No ten\u00edas cuenta en {}, se cre\u00f3 autom\u00e1ticamente.".format(moneda))
+
+        cuentas[moneda] = str(Decimal(cuentas.get(moneda, 0)) + monto)
         self.dataHelper.saveCuentas(username, cuentas)
-        self.loger.log("Usuario {} depositó {} en {}".format(username, monto, moneda))
+        self.loger.log("Usuario {} deposit\u00f3 {} en {}".format(username, monto, moneda))
 
     def procesar_pago(self, username, metodo, monto):
-        moneda = input("¿Desde qué cuenta querés pagar? (Ej: USD, ARS): \n").strip().upper()
+        moneda = input("\u00bfDesde qu\u00e9 cuenta quer\u00e9s pagar? (Ej: USD, ARS): \n").strip().upper()
 
         cuentas = self.dataHelper.getCuentas(username)
         if moneda not in cuentas:
-            raise ValueError("No tenés una cuenta en {}".format(moneda))
+            raise AccountNotFoundError(moneda)
 
         monto = Decimal(monto)
         if monto <= 0:
             raise ValueError("El monto debe ser mayor a 0")
 
         if Decimal(cuentas[moneda]) < monto:
-            raise ValueError("Saldo insuficiente en {}".format(moneda))
+            raise InsufficientBalanceError(moneda)
 
         factory_map = {
             '1': Cardfactory,
@@ -116,14 +101,14 @@ class LoginHelper:
         }
 
         if metodo not in factory_map:
-            raise ValueError("Método de pago inválido")
+            raise ValueError("M\u00e9todo de pago inv\u00e1lido")
 
         factory = factory_map[metodo]()
         checkout(factory, monto)
 
         cuentas[moneda] = str(Decimal(cuentas[moneda]) - monto)
         self.dataHelper.saveCuentas(username, cuentas)
-        self.loger.log("Usuario {} pagó {} con método {} desde cuenta {}".format(
+        self.loger.log("Usuario {} pag\u00f3 {} con m\u00e9todo {} desde cuenta {}".format(
             username, monto, metodo, moneda))
 
     def convertir_moneda(self, username, desde, hacia, monto):
@@ -136,17 +121,16 @@ class LoginHelper:
 
         cuentas = self.dataHelper.getCuentas(username)
         if desde not in cuentas:
-            raise ValueError("No tenés una cuenta en {}".format(desde))
+            raise AccountNotFoundError(desde)
         if Decimal(cuentas[desde]) < monto:
-            raise ValueError("Saldo insuficiente en {}".format(desde))
+            raise InsufficientBalanceError(desde)
 
-        rates = self.dataHelper.get_rates()
+        rates = self.fixer_service.get_rates()
         if desde not in rates:
-            raise ValueError("Moneda {} no soportada por Fixer.io".format(desde))
+            raise CurrencyNotSupportedError(desde)
         if hacia not in rates:
-            raise ValueError("Moneda {} no soportada por Fixer.io".format(hacia))
+            raise CurrencyNotSupportedError(hacia)
 
-        # Fixer.io usa EUR como base, calculamos la tasa entre las dos monedas
         tasa = Decimal(rates[hacia]) / Decimal(rates[desde])
         convertido = (monto * tasa).quantize(Decimal('.01'))
 
@@ -154,10 +138,38 @@ class LoginHelper:
         cuentas[hacia] = str(Decimal(cuentas.get(hacia, 0)) + convertido)
         self.dataHelper.saveCuentas(username, cuentas)
 
-        self.loger.log("Usuario {} convirtió {} {} a {} {}".format(
+        self.loger.log("Usuario {} convirti\u00f3 {} {} a {} {}".format(
             username, monto, desde, convertido, hacia))
         return tasa, convertido
 
+    def comprar_moneda(self, username, hacia, monto_destino, desde="ARS"):
+        desde = desde.strip().upper()
+        hacia = hacia.strip().upper()
 
+        monto_destino = Decimal(monto_destino)
+        if monto_destino <= 0:
+            raise ValueError("El monto debe ser mayor a 0")
 
-        
+        cuentas = self.dataHelper.getCuentas(username)
+        if desde not in cuentas:
+            raise AccountNotFoundError(desde)
+
+        rates = self.fixer_service.get_rates()
+        if desde not in rates:
+            raise CurrencyNotSupportedError(desde)
+        if hacia not in rates:
+            raise CurrencyNotSupportedError(hacia)
+
+        tasa = Decimal(rates[hacia]) / Decimal(rates[desde])
+        monto_origen = (monto_destino / tasa).quantize(Decimal('.01'))
+
+        if Decimal(cuentas[desde]) < monto_origen:
+            raise InsufficientBalanceError(desde)
+
+        cuentas[desde] = str(Decimal(cuentas[desde]) - monto_origen)
+        cuentas[hacia] = str(Decimal(cuentas.get(hacia, 0)) + monto_destino)
+        self.dataHelper.saveCuentas(username, cuentas)
+
+        self.loger.log("Usuario {} compr\u00f3 {} {} pagando {} {}".format(
+            username, monto_destino, hacia, monto_origen, desde))
+        return tasa, monto_origen

@@ -5,3 +5,5 @@ __pycache__/
 homebanking.db
 users.json
 *.json
+Data/user_data/
+*.pkl
