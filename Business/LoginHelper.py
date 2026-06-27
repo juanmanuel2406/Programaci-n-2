@@ -80,8 +80,9 @@ class LoginHelper:
         self.dataHelper.saveCuentas(username, cuentas)
         self.loger.log("Usuario {} deposit\u00f3 {} en {}".format(username, monto, moneda))
 
-    def procesar_pago(self, username, metodo, monto):
-        moneda = input("\u00bfDesde qu\u00e9 cuenta quer\u00e9s pagar? (Ej: USD, ARS): \n").strip().upper()
+    def procesar_pago(self, username, metodo, monto, moneda=None):
+        if moneda is None:
+            moneda = input("\u00bfDesde qu\u00e9 cuenta quer\u00e9s pagar? (Ej: USD, ARS): \n").strip().upper()
 
         cuentas = self.dataHelper.getCuentas(username)
         if moneda not in cuentas:
