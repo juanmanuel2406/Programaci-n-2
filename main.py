@@ -1,5 +1,5 @@
 def main():
-    from Presentacion.login import Login
+    from Business.login import Login
     running = True
     while running:
         print("\nSeleccion\u00e1 el m\u00e9todo de persistencia:")
