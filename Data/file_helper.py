@@ -1,5 +1,5 @@
 import os
-import pickle
+import json
 from Data.data_interface import IDataHelper
 
 class FileDataHelper(IDataHelper):
@@ -12,19 +12,19 @@ class FileDataHelper(IDataHelper):
         os.makedirs(self.base_path, exist_ok=True)
 
     def _user_path(self, username):
-        return os.path.join(self.base_path, "{}.pkl".format(username))
+        return os.path.join(self.base_path, "{}.json".format(username))
 
     def _load(self, username):
         path = self._user_path(username)
         if not os.path.exists(path):
             return None
-        with open(path, "rb") as f:
-            return pickle.load(f)
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
 
     def _save(self, username, data):
         path = self._user_path(username)
-        with open(path, "wb") as f:
-            pickle.dump(data, f)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
 
     def addUsuario(self, username, hashedPwd):
         data = {

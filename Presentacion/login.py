@@ -1,7 +1,20 @@
 from Business.LoginHelper import LoginHelper
 from getpass import getpass
+from decimal import Decimal, InvalidOperation
 
 class Login:
+
+    def _validar_moneda(self, moneda):
+        m = moneda.strip().upper()
+        if len(m) != 3 or not m.isalpha():
+            raise ValueError("La moneda debe ser un c\u00f3digo de 3 letras (Ej: USD, ARS, EUR)")
+        return m
+
+    def _validar_monto(self, monto):
+        try:
+            return Decimal(monto.strip())
+        except InvalidOperation:
+            raise ValueError("El monto debe ser un n\u00famero v\u00e1lido (Ej: 1000, 50.75)")
 
     def __init__(self, data_helper):
         self.loginHelper = LoginHelper(data_helper)
@@ -39,13 +52,17 @@ class Login:
 
     def deposito(self):
         try:
-            moneda = input("\u00bfEn qu\u00e9 cuenta quer\u00e9s depositar? (Ej: USD, ARS): \n")
-            monto = input("\u00bfCu\u00e1nto quer\u00e9s depositar?: \n")
-            confirmacion = input("\u00bfEst\u00e1s seguro que quer\u00e9s depositar {} en {}? (s/n): \n".format(monto, moneda.strip().upper()))
+            self.loginHelper.listar_cuentas(self.usuarioLogueado)
+            print()
+            moneda = self._validar_moneda(input("\u00bfEn qu\u00e9 cuenta quer\u00e9s depositar? (Ej: USD, ARS): \n"))
+            print()
+            monto = self._validar_monto(input("\u00bfCu\u00e1nto quer\u00e9s depositar?: \n"))
+            print()
+            confirmacion = input("\u00bfEst\u00e1s seguro que quer\u00e9s depositar {} en {}? (s/n): \n".format(monto, moneda))
             if confirmacion.strip().lower() != 's':
                 print("Dep\u00f3sito cancelado.")
                 return
-            self.loginHelper.depositar(self.usuarioLogueado, moneda, monto)
+            self.loginHelper.depositar(self.usuarioLogueado, moneda, str(monto))
             print("Dep\u00f3sito realizado correctamente.")
         except ValueError as e:
             print("Error: {}".format(e))
@@ -95,26 +112,37 @@ class Login:
             print("2. Mercado Pago")
             print("3. PayPal")
             metodo = input().strip()
-            monto = input("\u00bfCu\u00e1nto quer\u00e9s pagar?: \n")
-            confirmacion = input("\u00bfEst\u00e1s seguro de pagar {}? (s/n): \n".format(monto))
+            print()
+            monto = self._validar_monto(input("\u00bfCu\u00e1nto quer\u00e9s pagar?: \n"))
+            print()
+            self.loginHelper.listar_cuentas(self.usuarioLogueado)
+            print()
+            moneda = self._validar_moneda(input("\u00bfDesde qu\u00e9 cuenta quer\u00e9s pagar? (Ej: USD, ARS): \n"))
+            print()
+            confirmacion = input("\u00bfEst\u00e1s seguro de pagar {} desde {}? (s/n): \n".format(monto, moneda))
             if confirmacion.strip().lower() != 's':
                 print("Pago cancelado.")
                 return
-            self.loginHelper.procesar_pago(self.usuarioLogueado, metodo, monto)
+            self.loginHelper.procesar_pago(self.usuarioLogueado, metodo, str(monto), moneda)
             print("Pago realizado correctamente.")
         except ValueError as e:
             print("Error: {}".format(e))
 
     def cambio(self):
         try:
-            desde = input("\u00bfDe qu\u00e9 moneda quer\u00e9s convertir? (Ej: USD, ARS, EUR): \n")
-            hacia = input("\u00bfA qu\u00e9 moneda quer\u00e9s convertir? (Ej: USD, ARS, EUR): \n")
-            monto = input("\u00bfCu\u00e1nto quer\u00e9s convertir?: \n")
+            self.loginHelper.listar_cuentas(self.usuarioLogueado)
+            print()
+            desde = self._validar_moneda(input("\u00bfDe qu\u00e9 moneda quer\u00e9s convertir? (Ej: USD, ARS, EUR): \n"))
+            print()
+            hacia = self._validar_moneda(input("\u00bfA qu\u00e9 moneda quer\u00e9s convertir? (Ej: USD, ARS, EUR): \n"))
+            print()
+            monto = self._validar_monto(input("\u00bfCu\u00e1nto quer\u00e9s convertir?: \n"))
+            print()
             tasa, convertido = self.loginHelper.convertir_moneda(
-                self.usuarioLogueado, desde, hacia, monto)
+                self.usuarioLogueado, desde, hacia, str(monto))
             print("Tasa de cambio: 1 {} = {} {}".format(
-                desde.strip().upper(), tasa, hacia.strip().upper()))
-            print("Recibiste: {} {}".format(convertido, hacia.strip().upper()))
+                desde, tasa, hacia))
+            print("Recibiste: {} {}".format(convertido, hacia))
             print("Cambio realizado correctamente.")
         except ValueError as e:
             print("Error: {}".format(e))
@@ -123,20 +151,25 @@ class Login:
 
     def comprar(self):
         try:
-            hacia = input("\u00bfQu\u00e9 moneda quer\u00e9s comprar? (Ej: USD, EUR): \n")
-            monto = input("\u00bfCu\u00e1nto quer\u00e9s comprar?: \n")
-            desde = input("\u00bfCon qu\u00e9 moneda vas a pagar? (Ej: ARS, USD): \n").strip().upper()
+            hacia = self._validar_moneda(input("\u00bfQu\u00e9 moneda quer\u00e9s comprar? (Ej: USD, EUR): \n"))
+            print()
+            monto = self._validar_monto(input("\u00bfCu\u00e1nto quer\u00e9s comprar?: \n"))
+            print()
+            self.loginHelper.listar_cuentas(self.usuarioLogueado)
+            print()
+            desde = self._validar_moneda(input("\u00bfCon qu\u00e9 moneda vas a pagar? (Ej: ARS, USD): \n"))
+            print()
             if not desde:
                 desde = "ARS"
-            confirmacion = input("\u00bfEst\u00e1s seguro de comprar {} {}? (s/n): \n".format(monto, hacia.strip().upper()))
+            confirmacion = input("\u00bfEst\u00e1s seguro de comprar {} {}? (s/n): \n".format(monto, hacia))
             if confirmacion.strip().lower() != 's':
                 print("Compra cancelada.")
                 return
             tasa, costo = self.loginHelper.comprar_moneda(
-                self.usuarioLogueado, hacia, monto, desde)
+                self.usuarioLogueado, hacia, str(monto), desde)
             print("Tasa de cambio: 1 {} = {} {}".format(
-                hacia.strip().upper(), tasa, desde.upper()))
-            print("Te cost\u00f3: {} {}".format(costo, desde.upper()))
+                hacia, tasa, desde))
+            print("Te cost\u00f3: {} {}".format(costo, desde))
             print("Compra realizada correctamente.")
         except ValueError as e:
             print("Error: {}".format(e))
@@ -145,9 +178,10 @@ class Login:
 
     def abrirCuenta(self):
         try:
-            moneda = input("Ingrese la moneda de la cuenta (Ej: USD, ARS, EUR): \n")
+            moneda = self._validar_moneda(input("Ingrese la moneda de la cuenta (Ej: USD, ARS, EUR): \n"))
+            print()
             self.loginHelper.abrir_cuenta(self.usuarioLogueado, moneda)
-            print("Cuenta en {} abierta correctamente.".format(moneda.strip().upper()))
+            print("Cuenta en {} abierta correctamente.".format(moneda))
         except ValueError as e:
             print("Error: {}".format(e))
 
