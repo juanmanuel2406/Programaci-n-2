@@ -52,6 +52,8 @@ class Login:
 
     def deposito(self):
         try:
+            self.loginHelper.listar_cuentas(self.usuarioLogueado)
+            print()
             moneda = self._validar_moneda(input("\u00bfEn qu\u00e9 cuenta quer\u00e9s depositar? (Ej: USD, ARS): \n"))
             print()
             monto = self._validar_monto(input("\u00bfCu\u00e1nto quer\u00e9s depositar?: \n"))
@@ -113,17 +115,23 @@ class Login:
             print()
             monto = self._validar_monto(input("\u00bfCu\u00e1nto quer\u00e9s pagar?: \n"))
             print()
-            confirmacion = input("\u00bfEst\u00e1s seguro de pagar {}? (s/n): \n".format(monto))
+            self.loginHelper.listar_cuentas(self.usuarioLogueado)
+            print()
+            moneda = self._validar_moneda(input("\u00bfDesde qu\u00e9 cuenta quer\u00e9s pagar? (Ej: USD, ARS): \n"))
+            print()
+            confirmacion = input("\u00bfEst\u00e1s seguro de pagar {} desde {}? (s/n): \n".format(monto, moneda))
             if confirmacion.strip().lower() != 's':
                 print("Pago cancelado.")
                 return
-            self.loginHelper.procesar_pago(self.usuarioLogueado, metodo, str(monto))
+            self.loginHelper.procesar_pago(self.usuarioLogueado, metodo, str(monto), moneda)
             print("Pago realizado correctamente.")
         except ValueError as e:
             print("Error: {}".format(e))
 
     def cambio(self):
         try:
+            self.loginHelper.listar_cuentas(self.usuarioLogueado)
+            print()
             desde = self._validar_moneda(input("\u00bfDe qu\u00e9 moneda quer\u00e9s convertir? (Ej: USD, ARS, EUR): \n"))
             print()
             hacia = self._validar_moneda(input("\u00bfA qu\u00e9 moneda quer\u00e9s convertir? (Ej: USD, ARS, EUR): \n"))
@@ -146,6 +154,8 @@ class Login:
             hacia = self._validar_moneda(input("\u00bfQu\u00e9 moneda quer\u00e9s comprar? (Ej: USD, EUR): \n"))
             print()
             monto = self._validar_monto(input("\u00bfCu\u00e1nto quer\u00e9s comprar?: \n"))
+            print()
+            self.loginHelper.listar_cuentas(self.usuarioLogueado)
             print()
             desde = self._validar_moneda(input("\u00bfCon qu\u00e9 moneda vas a pagar? (Ej: ARS, USD): \n"))
             print()
