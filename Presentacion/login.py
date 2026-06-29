@@ -40,7 +40,9 @@ class Login:
     def deposito(self):
         try:
             moneda = input("\u00bfEn qu\u00e9 cuenta quer\u00e9s depositar? (Ej: USD, ARS): \n")
+            print()
             monto = input("\u00bfCu\u00e1nto quer\u00e9s depositar?: \n")
+            print()
             confirmacion = input("\u00bfEst\u00e1s seguro que quer\u00e9s depositar {} en {}? (s/n): \n".format(monto, moneda.strip().upper()))
             if confirmacion.strip().lower() != 's':
                 print("Dep\u00f3sito cancelado.")
@@ -95,7 +97,9 @@ class Login:
             print("2. Mercado Pago")
             print("3. PayPal")
             metodo = input().strip()
+            print()
             monto = input("\u00bfCu\u00e1nto quer\u00e9s pagar?: \n")
+            print()
             confirmacion = input("\u00bfEst\u00e1s seguro de pagar {}? (s/n): \n".format(monto))
             if confirmacion.strip().lower() != 's':
                 print("Pago cancelado.")
@@ -108,8 +112,11 @@ class Login:
     def cambio(self):
         try:
             desde = input("\u00bfDe qu\u00e9 moneda quer\u00e9s convertir? (Ej: USD, ARS, EUR): \n")
+            print()
             hacia = input("\u00bfA qu\u00e9 moneda quer\u00e9s convertir? (Ej: USD, ARS, EUR): \n")
+            print()
             monto = input("\u00bfCu\u00e1nto quer\u00e9s convertir?: \n")
+            print()
             tasa, convertido = self.loginHelper.convertir_moneda(
                 self.usuarioLogueado, desde, hacia, monto)
             print("Tasa de cambio: 1 {} = {} {}".format(
@@ -124,8 +131,11 @@ class Login:
     def comprar(self):
         try:
             hacia = input("\u00bfQu\u00e9 moneda quer\u00e9s comprar? (Ej: USD, EUR): \n")
+            print()
             monto = input("\u00bfCu\u00e1nto quer\u00e9s comprar?: \n")
+            print()
             desde = input("\u00bfCon qu\u00e9 moneda vas a pagar? (Ej: ARS, USD): \n").strip().upper()
+            print()
             if not desde:
                 desde = "ARS"
             confirmacion = input("\u00bfEst\u00e1s seguro de comprar {} {}? (s/n): \n".format(monto, hacia.strip().upper()))
@@ -146,6 +156,7 @@ class Login:
     def abrirCuenta(self):
         try:
             moneda = input("Ingrese la moneda de la cuenta (Ej: USD, ARS, EUR): \n")
+            print()
             self.loginHelper.abrir_cuenta(self.usuarioLogueado, moneda)
             print("Cuenta en {} abierta correctamente.".format(moneda.strip().upper()))
         except ValueError as e:

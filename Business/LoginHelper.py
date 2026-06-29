@@ -74,14 +74,15 @@ class LoginHelper:
 
         cuentas = self.dataHelper.getCuentas(username)
         if moneda not in cuentas:
-            print("No ten\u00edas cuenta en {}, se cre\u00f3 autom\u00e1ticamente.".format(moneda))
+            raise AccountNotFoundError(moneda)
 
-        cuentas[moneda] = str(Decimal(cuentas.get(moneda, 0)) + monto)
+        cuentas[moneda] = str(Decimal(cuentas[moneda]) + monto)
         self.dataHelper.saveCuentas(username, cuentas)
         self.loger.log("Usuario {} deposit\u00f3 {} en {}".format(username, monto, moneda))
 
     def procesar_pago(self, username, metodo, monto):
         moneda = input("\u00bfDesde qu\u00e9 cuenta quer\u00e9s pagar? (Ej: USD, ARS): \n").strip().upper()
+        print()
 
         cuentas = self.dataHelper.getCuentas(username)
         if moneda not in cuentas:
